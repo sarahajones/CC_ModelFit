@@ -6,9 +6,9 @@ Settings.NumStartCand = 10;
 Settings.TrialChunkSize = 'off';
 Settings.FindSampleSize = @(Data) length(Data.Orientation); %returns the number of trials
 Settings.FindIncludedTrials = @(Data) true(size(Data.Orientation));
-Settings.SuppressOutput = false;
+Settings.SuppressOutput = true;
 Settings.ReseedRng = true;
-Settings.DebugMode = true;
+Settings.DebugMode = false;
 Settings.JobsPerContainer = [];
 
 Settings.ModelName = model;

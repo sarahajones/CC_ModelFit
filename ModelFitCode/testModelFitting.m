@@ -1,8 +1,13 @@
-function DataSet = testModelFitting
-LoadedVariables  = load('DataStruct');
+function DataSet = testModelFitting(DataSet)
+% LoadedVariables  = load('DataStruct');
+% 
+% DataSet = LoadedVariables.DataSet; 
 
-DataSet = LoadedVariables.DataSet; 
+models = {'normativeGenerative', 'normativeGenerativeAlways', ...
+    'alternativeGenerative', 'alternativeGenerativeAlways'};
 
-model = 'normativeGenerative';
-
-DataSet = modelFitting(DataSet, model);
+for iModel = 1 : length(models)
+    
+    DataSet = modelFitting(DataSet, models{iModel});
+    
+end

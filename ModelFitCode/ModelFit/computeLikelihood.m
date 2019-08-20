@@ -11,27 +11,24 @@ threshold2 = paramStruct.thresh((Data.binnedConfidence + 1), 1);
 
 %setting model based decision rules, 0 = bayes, 1=rule based.
 decisionRule = NaN(length(Data.Orientation), 1); 
-for iTrial = 1:length(Data.Orientation)
-    if strcmp(model, 'normativeGenerative')
-        if Data.numGabors(iTrial) == 1
-            decisionRule(iTrial, 1) = 1;
-        else
-            decisionRule(iTrial, 1) = 0; 
-        end
-    elseif strcmp(model, 'normativeGenerativeAlways')
-        decisionRule(iTrial,1) = 0;
+oneGaborTrials = Data.numGabors == 1;
+   
+if strcmp(model, 'normativeGenerative')
+    decisionRule(:) = 0;
+    decisionRule(oneGaborTrials) = 1;
     
-    elseif strcmp(model, 'alternativeGenerative')
-          if Data.numGabors(iTrial) == 1
-            decisionRule (iTrial, 1) = 0;
-        else
-            decisionRule(iTrial, 1) = 1; 
-          end
-    elseif strcmp(model, 'alternativeGenerativeAlways')
-        decisionRule(iTrial,1) = 1;
-        
-    end
+elseif strcmp(model, 'normativeGenerativeAlways')
+    decisionRule(:) = 0;
+    
+elseif strcmp(model, 'alternativeGenerative')
+    decisionRule(:) = 1;
+    decisionRule(oneGaborTrials) = 0;
+    
+elseif strcmp(model, 'alternativeGenerativeAlways')
+    decisionRule(:) = 1;
+    
 end
+
  
             
 %converitng thresholds of probability into values of measurement X
@@ -43,60 +40,54 @@ sigma_S = sqrt(1/Data.KappaS);
  
  % if real data make sure have subtracted off pi to centre on zero 
  
- 
-for iTrial = 1: length(Data.Orientation)
-     %set variance row of interest based on contrast level
-      if Data.ContrastLevel(iTrial) == 0.1
-            indexOfInterest = 1;
-      elseif Data.ContrastLevel(iTrial) == 0.2
-            indexOfInterest = 2;
-      elseif Data.ContrastLevel(iTrial) == 0.3
-            indexOfInterest = 3;
-      elseif Data.ContrastLevel(iTrial) == 0.4
-            indexOfInterest = 4;
-      elseif Data.ContrastLevel(iTrial) == 0.8
-            indexOfInterest = 5;
-      end
 
-    %set variance column of interest based on model type
-      if Data.BlockType(iTrial) == 0
-          columnOfInterest = 1;
-      elseif Data.BlockType(iTrial) == 1
-          columnOfInterest = 2;
-      end
-      
-      convertedThreshold1(iTrial) = ...
-          convertThreshold (DataSetSpec.Mu, ...
-          paramStruct.Variance(indexOfInterest, columnOfInterest), ...
-          Data.Decision(iTrial), ... 
-          threshold1(iTrial), sigma_S, decisionRule(iTrial));
-      
-      convertedThreshold2(iTrial) = ...
-          convertThreshold (DataSetSpec.Mu, ...
-          paramStruct.Variance(indexOfInterest, columnOfInterest), ...
-          Data.Decision(iTrial), ...
-          threshold2(iTrial), sigma_S, decisionRule(iTrial));
-      
-      
-      % On trials in which the response was for C=1, the converted thresholds will now be ordered
-      % incorrectly, as coversion has the effect of re-ordering the thresholds in the oposite
-      % direction. Correct this now
-      if Data.Decision(iTrial) == 0
-          
-          upperThresh = convertedThreshold1(iTrial);
-          lowerThresh = convertedThreshold2(iTrial);
-          
-          convertedThreshold1(iTrial) = lowerThresh;
-          convertedThreshold2(iTrial) = upperThresh;
-          
-      end
+ %set variance row of interest based on contrast level
+ indexOfInterest = NaN(length(Data.Orientation), 1);
+ contrasts = [0.1, 0.2, 0.3, 0.4, 0.8];
  
-      thresholdArea(iTrial) = (normcdf(convertedThreshold2(iTrial), Data.Orientation(iTrial), sqrt(paramStruct.Variance(indexOfInterest, columnOfInterest))))...
-          - (normcdf(convertedThreshold1(iTrial), Data.Orientation(iTrial), sqrt(paramStruct.Variance(indexOfInterest, columnOfInterest))));
+ for iLevel = 1 : length(contrasts)
+     indexOfInterest(Data.ContrastLevel == contrasts(iLevel)) = iLevel;
+ end
+    
+ 
+ %set variance column of interest based on model type
+ columnOfInterest = ones(length(Data.Orientation), 1);
+ columnOfInterest(Data.BlockType == 1) = 2;
+ 
+ 
+% Convert from substripts for paramStruct.Varance to linear indeces
+varLinIndex = sub2ind([size(paramStruct.Variance)], indexOfInterest, columnOfInterest);
+trialMeasVariance = paramStruct.Variance(varLinIndex);
+ 
+convertedThreshold1 = ...
+    convertThreshold (DataSetSpec.Mu, ...
+    trialMeasVariance, ...
+    Data.Decision, ...
+    threshold1, sigma_S, decisionRule);
 
-end
-         
-         
+convertedThreshold2 = ...
+    convertThreshold (DataSetSpec.Mu, ...
+    trialMeasVariance, ...
+    Data.Decision, ...
+    threshold2, sigma_S, decisionRule);
+
+     
+% On trials in which the response was for C=1, the converted thresholds will now be ordered
+% incorrectly, as coversion has the effect of re-ordering the thresholds in the oposite
+% direction. Correct this now
+toSwitch = Data.Decision == 0;
+    
+upperThresh = convertedThreshold1(toSwitch);
+lowerThresh = convertedThreshold2(toSwitch);
+
+convertedThreshold1(toSwitch) = lowerThresh;
+convertedThreshold2(toSwitch) = upperThresh;
+
+
+thresholdArea = (normcdf(convertedThreshold2, Data.Orientation, sqrt(trialMeasVariance)))...
+    - (normcdf(convertedThreshold1, Data.Orientation, sqrt(trialMeasVariance)));
+
+
 probConfidence = ((1 - paramStruct.Lapse).*thresholdArea)+((paramStruct.Lapse).*(1/DataSetSpec.binNum));
 
 if any (probConfidence >1 | probConfidence < 0)
