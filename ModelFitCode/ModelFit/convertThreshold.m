@@ -10,7 +10,7 @@ ruleTrials = ~bayesTrials;
 
 % Process Bayes trials
 chunk1 = log((1./threshold(bayesTrials))-1);
-chunk2 = (((sigma_S)^2).* variance(bayesTrials));
+chunk2 = (((sigma_S)^2) + variance(bayesTrials));
 numerator = chunk1.*chunk2;
 
 denominator = -2.*mu;

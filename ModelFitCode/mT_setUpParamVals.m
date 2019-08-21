@@ -13,7 +13,7 @@ for iSpec = 1 : length(specs)
     % Some of the specs are optional
     if ismember(specs{iSpec}, optionalSpecs)...
         && ~(isfield(Settings.Params, specs{iSpec}))
-        warning('PLB and PUB not specified.')
+%         warning('PLB and PUB not specified.')
         continue
     end
     

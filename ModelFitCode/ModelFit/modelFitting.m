@@ -1,20 +1,27 @@
-function DataSet = modelFitting (DataSet, model)
+function DataSet = modelFitting(DataSet)
 
-Settings.Algorithm = 'fmincon';
-Settings.NumStartPoints = 3;
-Settings.NumStartCand = 10;
-Settings.TrialChunkSize = 'off';
-Settings.FindSampleSize = @(Data) length(Data.Orientation); %returns the number of trials
-Settings.FindIncludedTrials = @(Data) true(size(Data.Orientation));
-Settings.SuppressOutput = true;
-Settings.ReseedRng = true;
-Settings.DebugMode = false;
-Settings.JobsPerContainer = [];
+models = {'normativeGenerative', 'normativeGenerativeAlways', ...
+    'alternativeGenerative', 'alternativeGenerativeAlways'};
 
-Settings.ModelName = model;
-Settings.ComputeTrialLL.FunName = 'computeLikelihood';
-Settings.ComputeTrialLL.Args = {model, Settings.FindIncludedTrials};
-Settings.FindIfOutOfBounds = 'none';
+for iModel = 1 : length(models)
+    
+    model = models{iModel};
+
+Settings(iModel).Algorithm = 'fmincon';
+Settings(iModel).NumStartPoints = 10;
+Settings(iModel).NumStartCand = 100;
+Settings(iModel).TrialChunkSize = 'off';
+Settings(iModel).FindSampleSize = @(Data) length(Data.Orientation); %returns the number of trials
+Settings(iModel).FindIncludedTrials = @(Data) true(size(Data.Orientation));
+Settings(iModel).SuppressOutput = true;
+Settings(iModel).ReseedRng = true;
+Settings(iModel).DebugMode = false;
+Settings(iModel).JobsPerContainer = 128;
+
+Settings(iModel).ModelName = model;
+Settings(iModel).ComputeTrialLL.FunName = 'computeLikelihood';
+Settings(iModel).ComputeTrialLL.Args = {model, Settings(iModel).FindIncludedTrials};
+Settings(iModel).FindIfOutOfBounds = 'none';
 
 
 %setting up variance param struct structure
@@ -31,8 +38,8 @@ Param(2).Name = 'thresh';
 Param(2).UnpackedShape = [9 1];
 Param(2).UnpackedOrder = 1:9;
 Param(2).PackedOrder = 11:19;
-Param(2).InitialVals = @() randBetweenPoints(0, 1, 0, 9, 1);
-Param(2).LowerBound = @() zeros(9, 1);
+Param(2).InitialVals = @() randBetweenPoints(0.5, 1, 0, 9, 1);
+Param(2).LowerBound = @() zeros(9, 1) + 0.5;
 Param(2).UpperBound = @() ones(9, 1);
 
 %setting up variance param struct structure
@@ -45,10 +52,13 @@ Param(3).LowerBound = @() 1/600;
 Param(3).UpperBound = @() 500/600;
 
 
-Settings.Params = Param;
-Settings.NumParams = 20;
+Settings(iModel).Params = Param;
+Settings(iModel).NumParams = 20;
+
+end
 
 mode = 'local';
+% saveLoc = 'D:\Code\CC_ModelFit\ModelFitCode\Cluster';
 DataSet = mT_scheduleFits(mode, DataSet, Settings);
 
 end

@@ -1,7 +1,7 @@
 function trialLogLikelihood = computeLikelihood(model, ~, paramStruct, Data, DataSetSpec)
 
 paramStruct.thresh = sort(paramStruct.thresh);
-paramStruct.thresh = [0; paramStruct.thresh ;1];
+paramStruct.thresh = [0.5; paramStruct.thresh ;1];
 
 
 %setting thresholds  
@@ -27,6 +27,8 @@ elseif strcmp(model, 'alternativeGenerative')
 elseif strcmp(model, 'alternativeGenerativeAlways')
     decisionRule(:) = 1;
     
+else
+    error('bug')
 end
 
  
@@ -84,8 +86,18 @@ convertedThreshold1(toSwitch) = lowerThresh;
 convertedThreshold2(toSwitch) = upperThresh;
 
 
+if any(convertedThreshold2<convertedThreshold1); error('Bug'); end
+
+    
 thresholdArea = (normcdf(convertedThreshold2, Data.Orientation, sqrt(trialMeasVariance)))...
     - (normcdf(convertedThreshold1, Data.Orientation, sqrt(trialMeasVariance)));
+
+
+% Need to normalise the by the probability of the response
+probResp = normcdf(0, Data.Orientation, sqrt(trialMeasVariance));
+probResp(~toSwitch) = 1 - probResp(~toSwitch);
+
+thresholdArea = thresholdArea ./ probResp;
 
 
 probConfidence = ((1 - paramStruct.Lapse).*thresholdArea)+((paramStruct.Lapse).*(1/DataSetSpec.binNum));
