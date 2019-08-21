@@ -40,6 +40,7 @@ for iP = 1 : length(DataSet.P)
         
     end
     
+  
     % Now draw confidence reports according to their probability
     cumulativeProb = cumsum(probBin, 2);
     
