@@ -38,7 +38,7 @@ end
 convertedThreshold1 = NaN(length(Data.Orientation), 1);
 convertedThreshold2 = NaN(length(Data.Orientation),1); 
 thresholdArea = NaN(length(Data.Orientation),1);
-sigma_S = sqrt(1/Data.KappaS);
+sigma_S = sqrt(1./Data.KappaS);
  
  % if real data make sure have subtracted off pi to centre on zero 
  
@@ -100,10 +100,19 @@ probResp(~toSwitch) = 1 - probResp(~toSwitch);
 thresholdArea = thresholdArea ./ probResp;
 
 
+% If the probability of the response given was zero, treat the process as the
+% result of a lapse
+thresholdArea(probResp == 0) = 0;
+
+
 probConfidence = ((1 - paramStruct.Lapse).*thresholdArea)+((paramStruct.Lapse).*(1/DataSetSpec.binNum));
 
 if any (probConfidence >1 | probConfidence < 0)
     error ('probability out of range - check yourself')
+end
+
+if any(isnan(probConfidence))
+    error('Bug')
 end
 
 trialLogLikelihood = log(probConfidence);       
